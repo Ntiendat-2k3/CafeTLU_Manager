@@ -7,7 +7,7 @@ load_dotenv()
 class WeatherAPI:
     def get_weather(self):
         response = requests.get(
-            f"https://api.openweathermap.org/data/2.5/weather?q=Hue&appid={os.getenv('WEATHER_API_KEY')}"
+            f"https://api.openweathermap.org/data/2.5/weather?q=Hanoi&appid={os.getenv('WEATHER_API_KEY')}"
         )
         data = response.json()
         return {

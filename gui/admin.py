@@ -8,33 +8,35 @@ class AdminDashboard:
     def __init__(self):
         self.window = tk.Tk()
         self.window.title("Admin Dashboard")
-        self.window.geometry("1200x800")
+        self.window.geometry("1400x600")
+        self.window.config(bg="#f4f4f4")
         self.menu_service = MenuService()
         self.selected_item = None
+
+        # Mapping hiển thị
+        self.temp_mapping = {
+            'hot': 'Nóng 🔥',
+            'cold': 'Lạnh ❄️',
+            'both': 'Cả hai 🌡️'
+        }
 
         self.build_ui()
         self.load_data()
 
     def build_ui(self):
-        # Treeview
-        self.tree = ttk.Treeview(
-            self.window,
-            columns=("ID", "Tên", "Giá", "Size", "Trạng thái"),
-            show="headings",
-            height=25
-        )
-        self.tree.heading("ID", text="ID")
-        self.tree.heading("Tên", text="Tên món")
-        self.tree.heading("Giá", text="Giá (VND)")
-        self.tree.heading("Size", text="Size")
-        self.tree.heading("Trạng thái", text="Trạng thái")
-        self.tree.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
-        self.tree.bind("<<TreeviewSelect>>", self.on_item_selected)
+        # Main Frame
+        main_frame = tk.Frame(self.window, bg="#f4f4f4")
+        main_frame.pack(fill=tk.BOTH, expand=True)
 
-        # Control buttons
-        btn_frame = tk.Frame(self.window)
-        btn_frame.pack(pady=10)
+        # Sidebar Frame
+        sidebar = tk.Frame(main_frame, bg="#4CAF50", width=200)
+        sidebar.pack(side=tk.LEFT, fill=tk.Y)
 
+        # Sidebar Title
+        sidebar_title = tk.Label(sidebar, text="Quản Lý", font=("Arial", 14, "bold"), bg="#388E3C", fg="white", pady=20)
+        sidebar_title.pack(fill=tk.X)
+
+        # Sidebar Buttons
         buttons = [
             ("Thêm mới", self.open_add_dialog),
             ("Sửa", self.open_edit_dialog),
@@ -45,7 +47,37 @@ class AdminDashboard:
         ]
 
         for text, command in buttons:
-            tk.Button(btn_frame, text=text, command=command).pack(side=tk.LEFT, padx=5)
+            tk.Button(sidebar, text=text, command=command, bg="#4CAF50", fg="white", font=("Arial", 12), relief="flat", width=20, height=2).pack(pady=5)
+
+        # Main Content Area
+        content_frame = tk.Frame(main_frame, bg="#f4f4f4")
+        content_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+        # Header Label for content area
+        header_label = tk.Label(content_frame, text="Quản Lý Menu Cà Phê", font=("Arial", 18, "bold"), bg="#81C784", fg="white", pady=20)
+        header_label.pack(fill=tk.X)
+
+        # Treeview with styling
+        self.tree = ttk.Treeview(
+            content_frame,
+            columns=("ID", "Tên", "Giá", "Size", "Nhiệt độ", "Trạng thái"),
+            show="headings",
+            height=40,
+            style="Custom.Treeview",
+        )
+        self.tree.heading("ID", text="ID")
+        self.tree.heading("Tên", text="Tên món")
+        self.tree.heading("Giá", text="Giá (VND)")
+        self.tree.heading("Size", text="Size")
+        self.tree.heading("Nhiệt độ", text="Nhiệt độ")
+        self.tree.heading("Trạng thái", text="Trạng thái")
+        self.tree.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        self.tree.bind("<<TreeviewSelect>>", self.on_item_selected)
+
+        # Treeview Styling
+        style = ttk.Style()
+        style.configure("Custom.Treeview", font=("Arial", 11), background="#E8F5E9", foreground="black", fieldbackground="#E8F5E9", rowheight=35)
+        style.configure("Custom.Treeview.Heading", font=("Arial", 12, "bold"), background="#81C784", foreground="#388E3C")
 
     def load_data(self):
         for item in self.tree.get_children():
@@ -58,6 +90,7 @@ class AdminDashboard:
                 item['name'],
                 f"{item['price']:,.0f}",
                 item['size'],
+                self.temp_mapping[item['temperature_type']],
                 "🟢 Có" if item['is_available'] else "🔴 Hết"
             ))
 
@@ -71,24 +104,24 @@ class AdminDashboard:
         dialog.title("Thêm Cà Phê Mới")
         dialog.grab_set()
 
-        # Form fields
+        # Form fields with padding and consistency
         fields = [
             ("Tên món:", tk.Entry(dialog, width=30)),
             ("Giá (VND):", tk.Entry(dialog)),
             ("Size:", ttk.Combobox(dialog, values=["S", "M", "L"])),
             ("Mô tả:", tk.Entry(dialog, width=40)),
+            ("Nhiệt độ:", ttk.Combobox(dialog, values=list(self.temp_mapping.keys()))),
             ("Có sẵn:", tk.BooleanVar(value=True))
         ]
 
         for i, (label, widget) in enumerate(fields):
-            tk.Label(dialog, text=label).grid(row=i, column=0, padx=5, pady=5)
+            tk.Label(dialog, text=label, font=("Arial", 12)).grid(row=i, column=0, padx=10, pady=10, sticky="e")
             if isinstance(widget, tk.Entry):
-                widget.grid(row=i, column=1)
+                widget.grid(row=i, column=1, padx=10, pady=10)
             elif isinstance(widget, ttk.Combobox):
-                widget.grid(row=i, column=1)
-                widget.current(1)  # Mặc định size M
+                widget.grid(row=i, column=1, padx=10, pady=10)
             else:
-                tk.Checkbutton(dialog, variable=widget).grid(row=i, column=1, sticky="w")
+                tk.Checkbutton(dialog, variable=widget).grid(row=i, column=1, sticky="w", padx=10, pady=10)
 
         def submit():
             try:
@@ -97,7 +130,8 @@ class AdminDashboard:
                     price=float(fields[1][1].get()),
                     size=fields[2][1].get(),
                     description=fields[3][1].get(),
-                    is_available=fields[4][1].get()
+                    temperature_type=fields[4][1].get(),
+                    is_available=fields[5][1].get()
                 )
                 self.load_data()
                 dialog.destroy()
@@ -105,7 +139,7 @@ class AdminDashboard:
             except Exception as e:
                 messagebox.showerror("Lỗi", f"Lỗi: {str(e)}")
 
-        tk.Button(dialog, text="Lưu", command=submit).grid(row=5, column=1, pady=10)
+        tk.Button(dialog, text="Lưu", command=submit, bg="#4CAF50", fg="white", font=("Arial", 12), relief="flat").grid(row=6, column=1, pady=20)
 
     def open_edit_dialog(self):
         if not self.selected_item:
@@ -119,30 +153,32 @@ class AdminDashboard:
         dialog.title("Chỉnh sửa cà phê")
         dialog.grab_set()
 
-        # Form fields
+        # Form fields with padding and consistency
         fields = [
             ("Tên món:", tk.Entry(dialog, width=30)),
             ("Giá (VND):", tk.Entry(dialog)),
             ("Size:", ttk.Combobox(dialog, values=["S", "M", "L"])),
             ("Mô tả:", tk.Entry(dialog, width=40)),
+            ("Nhiệt độ:", ttk.Combobox(dialog, values=list(self.temp_mapping.keys()))),
             ("Có sẵn:", tk.BooleanVar())
         ]
 
-        # Điền giá trị hiện tại
+        # Pre-fill fields
         fields[0][1].insert(0, current_item['name'])
         fields[1][1].insert(0, str(current_item['price']))
         fields[2][1].set(current_item['size'])
         fields[3][1].insert(0, current_item['description'])
-        fields[4][1].set(current_item['is_available'])
+        fields[4][1].set(current_item['temperature_type'])
+        fields[5][1].set(current_item['is_available'])
 
         for i, (label, widget) in enumerate(fields):
-            tk.Label(dialog, text=label).grid(row=i, column=0, padx=5, pady=5)
+            tk.Label(dialog, text=label, font=("Arial", 12)).grid(row=i, column=0, padx=10, pady=10, sticky="e")
             if isinstance(widget, tk.Entry):
-                widget.grid(row=i, column=1)
+                widget.grid(row=i, column=1, padx=10, pady=10)
             elif isinstance(widget, ttk.Combobox):
-                widget.grid(row=i, column=1)
+                widget.grid(row=i, column=1, padx=10, pady=10)
             else:
-                tk.Checkbutton(dialog, variable=widget).grid(row=i, column=1, sticky="w")
+                tk.Checkbutton(dialog, variable=widget).grid(row=i, column=1, sticky="w", padx=10, pady=10)
 
         def submit():
             try:
@@ -152,7 +188,8 @@ class AdminDashboard:
                     price=float(fields[1][1].get()),
                     size=fields[2][1].get(),
                     description=fields[3][1].get(),
-                    is_available=fields[4][1].get()
+                    temperature_type=fields[4][1].get(),
+                    is_available=fields[5][1].get()
                 )
                 self.load_data()
                 dialog.destroy()
@@ -160,7 +197,7 @@ class AdminDashboard:
             except Exception as e:
                 messagebox.showerror("Lỗi", f"Lỗi: {str(e)}")
 
-        tk.Button(dialog, text="Lưu", command=submit).grid(row=5, column=1, pady=10)
+        tk.Button(dialog, text="Lưu", command=submit, bg="#4CAF50", fg="white", font=("Arial", 12), relief="flat").grid(row=6, column=1, pady=20)
 
     def delete_item(self):
         if not self.selected_item:
@@ -187,21 +224,18 @@ class AdminDashboard:
         except Exception as e:
             messagebox.showerror("Lỗi", f"Thao tác thất bại: {str(e)}")
 
-    # endregion
-
-    # region Staff Management
     def open_create_staff_dialog(self):
         dialog = tk.Toplevel()
         dialog.title("Tạo Staff Mới")
         dialog.grab_set()
 
-        tk.Label(dialog, text="Username:").grid(row=0, column=0, padx=5, pady=5)
-        entry_username = tk.Entry(dialog)
-        entry_username.grid(row=0, column=1)
+        tk.Label(dialog, text="Username:", font=("Arial", 12)).grid(row=0, column=0, padx=10, pady=10)
+        entry_username = tk.Entry(dialog, font=("Arial", 12))
+        entry_username.grid(row=0, column=1, padx=10, pady=10)
 
-        tk.Label(dialog, text="Password:").grid(row=1, column=0, padx=5, pady=5)
-        entry_password = tk.Entry(dialog, show="*")
-        entry_password.grid(row=1, column=1)
+        tk.Label(dialog, text="Password:", font=("Arial", 12)).grid(row=1, column=0, padx=10, pady=10)
+        entry_password = tk.Entry(dialog, show="*", font=("Arial", 12))
+        entry_password.grid(row=1, column=1, padx=10, pady=10)
 
         def submit():
             try:
@@ -214,9 +248,7 @@ class AdminDashboard:
             except Exception as e:
                 messagebox.showerror("Lỗi", f"Tạo staff thất bại: {str(e)}")
 
-        tk.Button(dialog, text="Tạo", command=submit).grid(row=2, column=1, pady=10)
-
-    # endregion
+        tk.Button(dialog, text="Tạo", command=submit, bg="#4CAF50", fg="white", font=("Arial", 12), relief="flat").grid(row=2, column=1, pady=20)
 
     def run(self):
         self.window.mainloop()
