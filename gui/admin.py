@@ -8,7 +8,7 @@ class AdminDashboard:
     def __init__(self):
         self.window = tk.Tk()
         self.window.title("Admin Dashboard")
-        self.window.geometry("1400x600")
+        self.window.geometry("1440x600")
         self.window.config(bg="#f4f4f4")
         self.menu_service = MenuService()
         self.selected_item = None
