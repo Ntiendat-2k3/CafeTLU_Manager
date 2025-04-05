@@ -86,3 +86,51 @@ class MenuService:
             WHERE is_available = TRUE 
             AND temperature_type IN (%s, 'both')""",
             (temp_type,))
+
+    def get_daily_sales(self):
+        db = Database()
+        query = """
+            SELECT 
+                DATE_FORMAT(o.order_date, '%d/%m/%Y') as sale_date,
+                COUNT(DISTINCT o.order_id) as total_orders,
+                SUM(od.quantity) as total_cups,
+                SUM(o.total) as total_revenue
+            FROM orders o
+            JOIN order_details od ON o.order_id = od.order_id
+            GROUP BY sale_date
+            ORDER BY o.order_date DESC
+            LIMIT 30
+        """
+        return db.fetch(query)
+
+    def get_monthly_sales(self):
+        db = Database()
+        query = """
+            SELECT 
+                DATE_FORMAT(o.order_date, '%m/%Y') as sale_month,
+                COUNT(DISTINCT o.order_id) as total_orders,
+                SUM(od.quantity) as total_cups,
+                SUM(o.total) as total_revenue
+            FROM orders o
+            JOIN order_details od ON o.order_id = od.order_id
+            GROUP BY sale_month
+            ORDER BY o.order_date DESC
+            LIMIT 12
+        """
+        return db.fetch(query)
+
+    def get_yearly_sales(self):
+        db = Database()
+        query = """
+            SELECT 
+                DATE_FORMAT(o.order_date, '%Y') as sale_year,
+                COUNT(DISTINCT o.order_id) as total_orders,
+                SUM(od.quantity) as total_cups,
+                SUM(o.total) as total_revenue
+            FROM orders o
+            JOIN order_details od ON o.order_id = od.order_id
+            GROUP BY sale_year
+            ORDER BY o.order_date DESC
+            LIMIT 5
+        """
+        return db.fetch(query)

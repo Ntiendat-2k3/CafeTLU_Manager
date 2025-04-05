@@ -3,7 +3,6 @@ from tkinter import ttk, messagebox
 from services.menu import MenuService
 from services.auth import create_staff
 
-
 class AdminDashboard:
     def __init__(self):
         self.window = tk.Tk()
@@ -43,7 +42,8 @@ class AdminDashboard:
             ("Xóa", self.delete_item),
             ("Đổi trạng thái", self.toggle_availability),
             ("Tải lại", self.load_data),
-            ("Tạo Staff", self.open_create_staff_dialog)
+            ("Tạo Staff", self.open_create_staff_dialog),
+            ("Thống kê bán hàng", self.open_sales_statistics)
         ]
 
         for text, command in buttons:
@@ -249,6 +249,104 @@ class AdminDashboard:
                 messagebox.showerror("Lỗi", f"Tạo staff thất bại: {str(e)}")
 
         tk.Button(dialog, text="Tạo", command=submit, bg="#4CAF50", fg="white", font=("Arial", 12), relief="flat").grid(row=2, column=1, pady=20)
+
+    def open_sales_statistics(self):
+        dialog = tk.Toplevel()
+        dialog.title("Thống Kê Bán Hàng")
+        dialog.geometry("1400x600")
+
+        # Tạo notebook
+        notebook = ttk.Notebook(dialog)
+
+        # Tab theo ngày
+        daily_frame = ttk.Frame(notebook)
+        self.create_statistics_table(
+            parent=daily_frame,
+            data=self.menu_service.get_daily_sales(),
+            columns=("Ngày", "Số Đơn", "Tổng Cốc", "Doanh Thu"),
+            title="THỐNG KÊ THEO NGÀY"
+        )
+
+        # Tab theo tháng
+        monthly_frame = ttk.Frame(notebook)
+        self.create_statistics_table(
+            parent=monthly_frame,
+            data=self.menu_service.get_monthly_sales(),
+            columns=("Tháng", "Số Đơn", "Tổng Cốc", "Doanh Thu"),
+            title="THỐNG KÊ THEO THÁNG"
+        )
+
+        # Tab theo năm
+        yearly_frame = ttk.Frame(notebook)
+        self.create_statistics_table(
+            parent=yearly_frame,
+            data=self.menu_service.get_yearly_sales(),
+            columns=("Năm", "Số Đơn", "Tổng Cốc", "Doanh Thu"),
+            title="THỐNG KÊ THEO NĂM"
+        )
+
+        notebook.add(daily_frame, text="Theo Ngày")
+        notebook.add(monthly_frame, text="Theo Tháng")
+        notebook.add(yearly_frame, text="Theo Năm")
+        notebook.pack(expand=True, fill='both', padx=10, pady=10)
+
+    def create_statistics_table(self, parent, data, columns, title):
+        # Frame chứa nội dung
+        container = ttk.Frame(parent)
+        container.pack(fill='both', expand=True, padx=10, pady=10)
+
+        # Tiêu đề
+        lbl_title = ttk.Label(
+            container,
+            text=title,
+            font=('Arial', 12, 'bold'),
+            foreground="#4CAF50"
+        )
+        lbl_title.pack(pady=10)
+
+        # Tạo Treeview
+        tree = ttk.Treeview(
+            container,
+            columns=columns,
+            show='headings',
+            style="Custom.Treeview",
+            height=15
+        )
+
+        # Định dạng cột
+        col_widths = {
+            "Ngày": 120,
+            "Tháng": 100,
+            "Năm": 80,
+            "Số Đơn": 100,
+            "Tổng Cốc": 120,
+            "Doanh Thu": 180
+        }
+
+        for col in columns:
+            tree.heading(col, text=col)
+            tree.column(col,
+                        width=col_widths.get(col, 100),
+                        anchor='center' if col != "Doanh Thu" else 'e'
+                        )
+
+        # Thêm dữ liệu
+        for item in data:
+            values = (
+                item[list(item.keys())[0]],  # Ngày/Tháng/Năm
+                item['total_orders'],
+                item['total_cups'],
+                f"{item['total_revenue']:,.0f}₫"  # Định dạng tiền tệ
+            )
+            tree.insert('', 'end', values=values)
+
+        # Thanh cuộn
+        scroll_y = ttk.Scrollbar(container, orient="vertical", command=tree.yview)
+        tree.configure(yscrollcommand=scroll_y.set)
+
+        # Layout
+        tree.pack(side='left', fill='both', expand=True)
+        scroll_y.pack(side='right', fill='y')
 
     def run(self):
         self.window.mainloop()
