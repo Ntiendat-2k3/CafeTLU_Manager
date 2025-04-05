@@ -23,15 +23,13 @@ class OrderService:
             for item in items:
                 db.execute(
                     """INSERT INTO order_details 
-                    (order_id, item_id, size, quantity, price, temperature_type) 
-                    VALUES (%s, %s, %s, %s, %s, %s)""",
+                    (order_id, item_id, size, quantity) 
+                    VALUES (%s, %s, %s, %s)""",
                     (
                         order_id,
                         item['item_id'],
                         item['size'],
                         item['quantity'],
-                        item['price'],  # Lấy giá từ giỏ hàng
-                        item['temperature']  # Lấy nhiệt độ từ giỏ hàng
                     )
                 )
 

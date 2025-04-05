@@ -11,6 +11,16 @@ class MenuService:
 
     def add_coffee(self, name, price, size, description, temperature_type='hot', is_available=True):
         db = Database()
+
+        if not temperature_type:
+            temperature_type = 'hot'
+
+        if is_available is None:
+            is_available = True
+
+        if not size:
+            size = "S"
+
         return db.execute(
             """INSERT INTO menu 
             (name, price, size, description, is_available, temperature_type) 

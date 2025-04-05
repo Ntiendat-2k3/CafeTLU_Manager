@@ -304,7 +304,7 @@ class StaffDashboard:
             PDFExporter.export_order(order_id, self.cart, self.lbl_total.cget("text"))
 
             messagebox.showinfo("Thành công",
-                                f"Đã tạo đơn #{order_id}\nHóa đơn đã được xuất ra file PDF!")
+                                f"Đã tạo đơn #{order_id}\nHóa đơn đã được xuất ra!")
 
             self.cart.clear()
             self.update_cart_display()
