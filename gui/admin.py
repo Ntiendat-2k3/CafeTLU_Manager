@@ -229,8 +229,8 @@ class AdminDashboard:
     def open_add_dialog(self):
         """Mở dialog thêm món mới"""
         fields = [
-            ("Tên món:", tk.Entry, {'width': 30}),
-            ("Giá (VND):", tk.Entry, {}),
+            ("Tên món:*", tk.Entry, {'width': 30}),
+            ("Giá (VND):*", tk.Entry, {}),
             ("Size:", ttk.Combobox, {'values': ["S", "M", "L"]}),
             ("Mô tả:", tk.Entry, {'width': 40}),
             ("Nhiệt độ:", ttk.Combobox, {'values': list(self.TEMP_MAPPING.keys())}),
@@ -239,15 +239,97 @@ class AdminDashboard:
 
         dialog, entries = self._create_form_dialog("Thêm Cà Phê Mới", fields)
 
+        entries[2].set("S")  # Size mặc định
+        entries[4].set("both")  # Nhiệt độ mặc định
+
         btn_submit = tk.Button(
             dialog,
             text="Lưu",
-            command=lambda: self._handle_add_submit(dialog, entries),
+            command=lambda: self._validate_and_submit_add(dialog, entries),
             bg=self.STYLES['primary_color'],
             fg="white",
             font=self.STYLES['font']
         )
         btn_submit.grid(row=6, column=1, pady=20)
+
+    def _validate_common_fields(self, entries: list) -> Tuple[bool, dict]:
+        """Validate các trường chung cho cả add và edit"""
+        data = {
+            'name': entries[0].get().strip(),
+            'price_str': entries[1].get().strip(),
+            'size': entries[2].get(),
+            'description': entries[3].get().strip(),
+            'temperature_type': entries[4].get(),
+            'is_available': entries[5].get()
+        }
+
+        # Validate trường bắt buộc
+        if not data['name']:
+            messagebox.showerror("Lỗi", "Vui lòng nhập tên món")
+            return False, None
+
+        if not data['price_str']:
+            messagebox.showerror("Lỗi", "Vui lòng nhập giá")
+            return False, None
+
+        # Validate định dạng giá
+        try:
+            data['price'] = float(data['price_str'])
+            if data['price'] <= 0:
+                raise ValueError
+        except ValueError:
+            messagebox.showerror("Lỗi", "Giá phải là số lớn hơn 0")
+            return False, None
+
+        # Validate size
+        if data['size'] not in ["S", "M", "L"]:
+            messagebox.showerror("Lỗi", "Size không hợp lệ")
+            return False, None
+
+        # Validate nhiệt độ
+        if data['temperature_type'] not in self.TEMP_MAPPING:
+            messagebox.showerror("Lỗi", "Loại nhiệt độ không hợp lệ")
+            return False, None
+
+        return True, {
+            'name': data['name'],
+            'price': data['price'],
+            'size': data['size'],
+            'description': data['description'] or None,  # Cho phép mô tả rỗng
+            'temperature_type': data['temperature_type'],
+            'is_available': data['is_available']
+        }
+
+    def _validate_and_submit_add(self, dialog: tk.Toplevel, entries: list):
+        """Xử lý validate và submit form thêm mới"""
+        valid, cleaned_data = self._validate_common_fields(entries)
+        if not valid:
+            return
+
+        try:
+            self.menu_service.add_coffee(**cleaned_data)
+            self.load_data()
+            dialog.destroy()
+            messagebox.showinfo("Thành công", "Thêm món thành công!")
+        except Exception as e:
+            messagebox.showerror("Lỗi", f"Lỗi: {str(e)}")
+
+    def _handle_edit_submit(self, dialog: tk.Toplevel, entries: list, item_id: int):
+        """Xử lý submit form chỉnh sửa"""
+        valid, cleaned_data = self._validate_common_fields(entries)
+        if not valid:
+            return
+
+        try:
+            self.menu_service.update_coffee(
+                item_id=item_id,
+                **cleaned_data
+            )
+            self.load_data()
+            dialog.destroy()
+            messagebox.showinfo("Thành công", "Cập nhật thành công!")
+        except Exception as e:
+            messagebox.showerror("Lỗi", f"Lỗi: {str(e)}")
 
     def _handle_add_submit(self, dialog: tk.Toplevel, entries: list):
         """Xử lý submit form thêm mới"""
@@ -276,8 +358,8 @@ class AdminDashboard:
         current_item = self.menu_service.get_item_by_id(item_id)
 
         fields = [
-            ("Tên món:", tk.Entry, {'width': 30}),
-            ("Giá (VND):", tk.Entry, {}),
+            ("Tên món:*", tk.Entry, {'width': 30}),
+            ("Giá (VND):*", tk.Entry, {}),
             ("Size:", ttk.Combobox, {'values': ["S", "M", "L"]}),
             ("Mô tả:", tk.Entry, {'width': 40}),
             ("Nhiệt độ:", ttk.Combobox, {'values': list(self.TEMP_MAPPING.keys())}),
@@ -286,11 +368,15 @@ class AdminDashboard:
 
         dialog, entries = self._create_form_dialog("Chỉnh sửa cà phê", fields)
 
-        # Điền dữ liệu hiện tại
+        # Điền dữ liệu hiện tại - FIXED
         entries[0].insert(0, current_item['name'])
         entries[1].insert(0, str(current_item['price']))
         entries[2].set(current_item['size'])
-        entries[3].insert(0, current_item['description'])
+
+        # Sửa phần xử lý trường mô tả
+        description = current_item.get('description', '')
+        entries[3].insert(0, str(description))  # Thêm ép kiểu về string
+
         entries[4].set(current_item['temperature_type'])
         entries[5].set(current_item['is_available'])
 
