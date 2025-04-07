@@ -21,6 +21,11 @@ def create_staff(username, password):
         (username, hashed_pw.decode())
     )
 
+def check_username_exists(username: str) -> bool:
+    db = Database()
+    result = db.fetch("SELECT * FROM users WHERE username = %s", (username,))
+    return len(result) > 0
+
 def login(username, password):
     db = Database()
     user = db.fetch("SELECT * FROM users WHERE username = %s", (username,))

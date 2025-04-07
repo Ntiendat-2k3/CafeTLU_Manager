@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from typing import Dict, List, Tuple, Optional
 from services.menu import MenuService
-from services.auth import create_staff
+from services.auth import create_staff, check_username_exists
 
 
 class AdminDashboard:
@@ -355,26 +355,23 @@ class AdminDashboard:
         dialog.title("Tạo Staff Mới")
         dialog.grab_set()
 
-        fields = [
-            ("Username:", tk.Entry, {'font': self.STYLES['font']}),
-            ("Password:", tk.Entry, {'show': "*", 'font': self.STYLES['font']})
-        ]
+        entries = []  # List để lưu các widget Entry
 
-        for i, (label, widget_type, options) in enumerate(fields):
-            tk.Label(dialog, text=label, font=self.STYLES['font']).grid(
-                row=i, column=0, padx=10, pady=10, sticky="e"
-            )
-            widget = widget_type(dialog, **options)
-            widget.grid(row=i, column=1, padx=10, pady=10)
+        # Tạo các trường nhập liệu và lưu vào list entries
+        tk.Label(dialog, text="Username:", font=self.STYLES['font']).grid(row=0, column=0, padx=10, pady=10, sticky="e")
+        username_entry = tk.Entry(dialog, font=self.STYLES['font'])
+        username_entry.grid(row=0, column=1, padx=10, pady=10)
+        entries.append(username_entry)
+
+        tk.Label(dialog, text="Password:", font=self.STYLES['font']).grid(row=1, column=0, padx=10, pady=10, sticky="e")
+        password_entry = tk.Entry(dialog, show="*", font=self.STYLES['font'])
+        password_entry.grid(row=1, column=1, padx=10, pady=10)
+        entries.append(password_entry)
 
         btn_submit = tk.Button(
             dialog,
             text="Tạo",
-            command=lambda: self._handle_create_staff(
-                dialog,
-                fields[0][1](dialog).get(),  # Lấy username
-                fields[1][1](dialog).get()  # Lấy password
-            ),
+            command=lambda: self._handle_create_staff(dialog, entries[0].get(), entries[1].get()),
             bg=self.STYLES['primary_color'],
             fg="white",
             font=self.STYLES['font']
@@ -384,6 +381,19 @@ class AdminDashboard:
     def _handle_create_staff(self, dialog: tk.Toplevel, username: str, password: str):
         """Xử lý tạo staff mới"""
         try:
+            # Validate input
+            if not username or not password:
+                messagebox.showerror("Lỗi", "Vui lòng điền đầy đủ username và password")
+                return
+
+            if check_username_exists(username):
+                messagebox.showerror("Lỗi", "Username đã tồn tại! Vui lòng chọn username khác")
+                return
+
+            if len(password) < 6:
+                messagebox.showerror("Lỗi", "Password phải có ít nhất 6 ký tự")
+                return
+
             create_staff(username=username, password=password)
             messagebox.showinfo("Thành công", "Tạo staff thành công!")
             dialog.destroy()
@@ -476,4 +486,3 @@ class AdminDashboard:
     def run(self):
         """Chạy ứng dụng"""
         self.window.mainloop()
-
