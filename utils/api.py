@@ -6,12 +6,21 @@ load_dotenv()
 
 class WeatherAPI:
     def get_weather(self):
+        API_KEY = os.getenv('WEATHER_API_KEY')
+        if not API_KEY:
+            raise ValueError("Missing WEATHER_API_KEY in .env file")
+
         response = requests.get(
-            f"https://api.openweathermap.org/data/2.5/weather?q=Hanoi&appid={os.getenv('WEATHER_API_KEY')}"
+            "https://api.openweathermap.org/data/2.5/weather",
+            params={
+                'q': 'Hanoi,VN',
+                'appid': API_KEY,
+                'units': 'metric'  # Sử dụng độ Celsius
+            }
         )
         data = response.json()
         return {
-            'temp': round(data['main']['temp'] - 273.15, 1),
+            'temp': data['main']['temp'],
             # 'temp': 40,
             'description': data['weather'][0]['description']
         }

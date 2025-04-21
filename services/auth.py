@@ -34,3 +34,16 @@ def login(username, password):
     if bcrypt.checkpw(password.encode(), user[0]['password_hash'].encode()):
         return True, user[0]['role'], user[0]['user_id']  # Thêm user_id vào đây
     return False, None, None  # Trả về None cho role và user_id nếu sai mật khẩu
+
+def get_all_staff():
+    """Lấy danh sách tất cả nhân viên"""
+    db = Database()
+    results = db.fetch("SELECT user_id, username, role FROM users WHERE role = 'staff'")
+    return [
+        {
+            'user_id': row['user_id'],
+            'username': row['username'],
+            'role': row['role'],
+        }
+        for row in results
+    ] if results else []

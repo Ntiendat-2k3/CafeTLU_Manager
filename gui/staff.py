@@ -30,6 +30,7 @@ class StaffDashboard:
         self._setup_ui()
         self._load_initial_data()
 
+    # cấu hình
     def _configure_window(self) -> tk.Tk:
         """Cấu hình cửa sổ chính"""
         window = tk.Tk()
@@ -48,7 +49,9 @@ class StaffDashboard:
         style.configure("Treeview", font=('Arial', 10), rowheight=25)
         style.map("Treeview", background=[('selected', '#3d85c6')])
         style.configure('Search.TButton', font=('Arial', 10), padding=5, relief='flat')
+    # -----------------
 
+    # UI Setup
     def _setup_ui(self):
         """Xây dựng giao diện người dùng"""
         main_frame = ttk.Frame(self.window)
@@ -62,7 +65,7 @@ class StaffDashboard:
         header_frame = ttk.Frame(parent)
         header_frame.pack(fill=tk.X, pady=(0, 10))
 
-        # Hiển thị thông tin thời tiết
+        # Weather display
         self.weather_label = ttk.Label(
             header_frame,
             text="Đang tải thời tiết...",
@@ -71,7 +74,7 @@ class StaffDashboard:
         )
         self.weather_label.pack(side=tk.LEFT, padx=5)
 
-        # Khung recommendation
+        # Recommendation buttons
         self.recommendation_frame = ttk.Frame(header_frame)
         self.recommendation_frame.pack(side=tk.RIGHT, padx=10)
 
@@ -80,21 +83,24 @@ class StaffDashboard:
         content_frame = ttk.Frame(parent)
         content_frame.pack(fill=tk.BOTH, expand=True)
 
-        # Phần menu
+        # Menu section
         menu_frame = self._build_menu_frame(content_frame)
-        self._build_menu_treeview(menu_frame)
+        self._build_menu_components(menu_frame)
 
-        # Phần giỏ hàng
+        # Cart section
         cart_frame = self._build_cart_frame(content_frame)
-        self._build_cart_treeview(cart_frame)
-        self._build_cart_controls(cart_frame)
+        self._build_cart_components(cart_frame)
 
     def _build_menu_frame(self, parent) -> ttk.Frame:
         """Xây dựng khung menu"""
         menu_frame = ttk.LabelFrame(parent, text=" Thực đơn ", padding=10)
         menu_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        self._build_search_panel(menu_frame)
         return menu_frame
+
+    def _build_menu_components(self, parent):
+        """Xây dựng các thành phần menu"""
+        self._build_search_panel(parent)
+        self._build_menu_treeview(parent)
 
     def _build_search_panel(self, parent):
         """Xây dựng thanh tìm kiếm"""
@@ -148,6 +154,11 @@ class StaffDashboard:
         cart_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=(10, 0))
         return cart_frame
 
+    def _build_cart_components(self, parent):
+        """Xây dựng các thành phần giỏ hàng"""
+        self._build_cart_treeview(parent)
+        self._build_cart_controls(parent)
+
     def _build_cart_treeview(self, parent):
         """Xây dựng treeview cho giỏ hàng"""
         self.tree_cart = ttk.Treeview(
@@ -176,39 +187,10 @@ class StaffDashboard:
         control_frame = ttk.Frame(parent)
         control_frame.pack(fill=tk.X, pady=(10, 0))
 
-        button_configs = [
-            ("➕ Thêm", self._add_to_cart, "#4CAF50", tk.LEFT),
-            ("❌ Xóa", self._remove_from_cart, "#f44336", tk.LEFT),
-        ]
+        # Action buttons
+        self._build_cart_action_buttons(control_frame)
 
-        for text, command, color, side in button_configs:
-            btn = tk.Button(
-                control_frame,
-                text=text,
-                command=command,
-                bg=color,
-                fg="white",
-                font=('Arial', 10, 'bold'),
-                width=12,
-                padx=10,
-                pady=5
-            )
-            btn.pack(side=side, padx=5)
-
-        # Tạo riêng nút checkout để gán vào self
-        self.btn_checkout = tk.Button(
-            control_frame,
-            text="💰 Tạo đơn",
-            command=self._create_order,
-            bg="#2196F3",
-            fg="white",
-            font=('Arial', 10, 'bold'),
-            width=12,
-            padx=10,
-            pady=5
-        )
-        self.btn_checkout.pack(side=tk.RIGHT, padx=5)
-
+        # Total label
         self.lbl_total = ttk.Label(
             parent,
             text="Tổng tiền: 0 VND",
@@ -218,6 +200,32 @@ class StaffDashboard:
         )
         self.lbl_total.pack(fill=tk.X, pady=(10, 0))
 
+    def _build_cart_action_buttons(self, parent):
+        """Xây dựng các nút thao tác giỏ hàng"""
+        button_configs = [
+            ("➕ Thêm", self._add_to_cart, "#4CAF50", tk.LEFT),
+            ("❌ Xóa", self._remove_from_cart, "#f44336", tk.LEFT),
+            ("💰 Tạo đơn", self._create_order, "#2196F3", tk.RIGHT)
+        ]
+
+        for text, command, color, side in button_configs:
+            btn = tk.Button(
+                parent,
+                text=text,
+                command=command,
+                bg=color,
+                fg="white",
+                font=('Arial', 10, 'bold'),
+                width=12,
+                padx=10,
+                pady=5
+            )
+            if text == "💰 Tạo đơn":
+                self.btn_checkout = btn
+            btn.pack(side=side, padx=5)
+    # ---------------------
+
+    # load data và hiển thị
     def _load_initial_data(self):
         """Tải dữ liệu ban đầu"""
         self._load_menu()
@@ -240,23 +248,18 @@ class StaffDashboard:
         except Exception as e:
             messagebox.showerror("Lỗi", f"Không thể tải menu: {str(e)}")
 
-    def _get_filtered_items(self, temp_type: Optional[str]) -> List[Dict]:
-        """Lấy danh sách item đã lọc"""
-        if self.search_keyword:
-            return self.menu_service.search_items(self.search_keyword)
+    def _update_cart_display(self):
+        """Cập nhật hiển thị giỏ hàng"""
+        self.tree_cart.delete(*self.tree_cart.get_children())
+        total = 0
 
-        items = self.menu_service.get_available_coffees()
+        for item in self.cart:
+            subtotal = item['price'] * item['quantity']
+            total += subtotal
+            self._insert_cart_item(item, subtotal)
 
-        if temp_type:
-            return [item for item in items if item['temperature_type'] == temp_type]
-
-        return items
-
-    def _get_recommendations(self) -> List[int]:
-        """Lấy danh sách ID các món được đề xuất"""
-        current_temp = self.weather_api.get_weather().get('temp', 25)
-        recommendations = self.menu_service.get_recommendations(current_temp)
-        return [item['item_id'] for item in recommendations]
+        self.lbl_total.config(text=f"Tổng tiền: {total:,.0f} VND")
+        self._update_checkout_button_state()
 
     def _insert_menu_item(self, item: Dict, tags: tuple):
         """Thêm item vào treeview menu"""
@@ -268,17 +271,19 @@ class StaffDashboard:
             f"{item['price']:,.0f}"
         ), tags=tags)
 
-    def _on_search(self, event=None):
-        """Xử lý sự kiện tìm kiếm"""
-        self.search_keyword = self.search_var.get().strip()
-        self._load_menu(self.current_filter)
+    def _insert_cart_item(self, item: Dict, subtotal: float):
+        """Thêm item vào treeview giỏ hàng"""
+        self.tree_cart.insert("", "end", values=(
+            item['item_id'],
+            item['name'],
+            item['size'],
+            self.TEMP_MAPPING[item['temperature_type']][0],
+            item['quantity'],
+            f"{subtotal:,.0f} VND"
+        ))
+    # ----------------------
 
-    def _clear_search(self):
-        """Xóa bộ lọc tìm kiếm"""
-        self.search_var.set("")
-        self.search_keyword = ""
-        self._load_menu(self.current_filter)
-
+    # Weather and Recommendations
     def _update_weather_recommendations(self):
         """Cập nhật thông tin thời tiết và đề xuất"""
         try:
@@ -344,7 +349,6 @@ class StaffDashboard:
         """Cập nhật style cho các nút lọc"""
         for btn in self.recommendation_frame.winfo_children():
             if isinstance(btn, tk.Button):
-                # Kiểm tra temp_type từ text của button
                 btn_text = btn.cget("text").lower()
                 temp_type = None
 
@@ -357,9 +361,10 @@ class StaffDashboard:
                 elif 'tất cả' in btn_text:
                     temp_type = None
 
-                # Cập nhật trạng thái nút
                 btn.config(relief="sunken" if temp_type == self.current_filter else "raised")
+    # ---------------------
 
+    # cart
     def _add_to_cart(self):
         """Thêm món vào giỏ hàng"""
         selected = self.tree_menu.selection()
@@ -380,6 +385,42 @@ class StaffDashboard:
             return
 
         self._update_cart(item, size, quantity)
+
+    def _remove_from_cart(self):
+        """Xóa món khỏi giỏ hàng"""
+        selected = self.tree_cart.selection()
+        if not selected:
+            messagebox.showwarning("Cảnh báo", "Vui lòng chọn món trong giỏ")
+            return
+
+        item_id = self.tree_cart.item(selected[0])['values'][0]
+        size = self.tree_cart.item(selected[0])['values'][2]
+
+        self.cart = [
+            item for item in self.cart
+            if not (item['item_id'] == item_id and item['size'] == size)
+        ]
+
+        self._update_cart_display()
+
+    def _update_cart(self, item: Dict, size: str, quantity: int):
+        """Cập nhật giỏ hàng"""
+        existing_item = next(
+            (i for i in self.cart
+             if i['item_id'] == item['item_id'] and i['size'] == size),
+            None
+        )
+
+        if existing_item:
+            existing_item['quantity'] += quantity
+        else:
+            self.cart.append({
+                **item,
+                'size': size,
+                'quantity': quantity
+            })
+
+        self._update_cart_display()
 
     def _validate_item_availability(self, item: Dict) -> bool:
         """Kiểm tra món có sẵn không"""
@@ -404,71 +445,13 @@ class StaffDashboard:
         messagebox.showerror("Lỗi", "Số lượng không hợp lệ!")
         return None
 
-    def _update_cart(self, item: Dict, size: str, quantity: int):
-        """Cập nhật giỏ hàng"""
-        existing_item = next(
-            (i for i in self.cart
-             if i['item_id'] == item['item_id'] and i['size'] == size),
-            None
-        )
-
-        if existing_item:
-            existing_item['quantity'] += quantity
-        else:
-            self.cart.append({
-                **item,
-                'size': size,
-                'quantity': quantity
-            })
-
-        self._update_cart_display()
-
-    def _update_cart_display(self):
-        """Cập nhật hiển thị giỏ hàng"""
-        self.tree_cart.delete(*self.tree_cart.get_children())
-        total = 0
-
-        for item in self.cart:
-            subtotal = item['price'] * item['quantity']
-            total += subtotal
-            self._insert_cart_item(item, subtotal)
-
-        self.lbl_total.config(text=f"Tổng tiền: {total:,.0f} VND")
-        self._update_checkout_button_state()
-
-    def _insert_cart_item(self, item: Dict, subtotal: float):
-        """Thêm item vào treeview giỏ hàng"""
-        self.tree_cart.insert("", "end", values=(
-            item['item_id'],
-            item['name'],
-            item['size'],
-            self.TEMP_MAPPING[item['temperature_type']][0],
-            item['quantity'],
-            f"{subtotal:,.0f} VND"
-        ))
-
     def _update_checkout_button_state(self):
         """Cập nhật trạng thái nút thanh toán"""
         state = tk.NORMAL if self.cart else tk.DISABLED
         self.btn_checkout.config(state=state)
+    # ---------------------
 
-    def _remove_from_cart(self):
-        """Xóa món khỏi giỏ hàng"""
-        selected = self.tree_cart.selection()
-        if not selected:
-            messagebox.showwarning("Cảnh báo", "Vui lòng chọn món trong giỏ")
-            return
-
-        item_id = self.tree_cart.item(selected[0])['values'][0]
-        size = self.tree_cart.item(selected[0])['values'][2]
-
-        self.cart = [
-            item for item in self.cart
-            if not (item['item_id'] == item_id and item['size'] == size)
-        ]
-
-        self._update_cart_display()
-
+    # order
     def _create_order(self):
         """Tạo đơn hàng mới"""
         try:
@@ -496,7 +479,38 @@ class StaffDashboard:
         """Xóa toàn bộ giỏ hàng"""
         self.cart.clear()
         self._update_cart_display()
+    # -----------------
+
+    # Utility
+    def _get_filtered_items(self, temp_type: Optional[str]) -> List[Dict]:
+        """Lấy danh sách item đã lọc"""
+        if self.search_keyword:
+            return self.menu_service.search_items(self.search_keyword)
+
+        items = self.menu_service.get_available_coffees()
+
+        if temp_type:
+            return [item for item in items if item['temperature_type'] == temp_type]
+
+        return items
+
+    def _get_recommendations(self) -> List[int]:
+        """Lấy danh sách ID các món được đề xuất"""
+        current_temp = self.weather_api.get_weather().get('temp', 25)
+        recommendations = self.menu_service.get_recommendations(current_temp)
+        return [item['item_id'] for item in recommendations]
+
+    def _on_search(self, event=None):
+        """Xử lý sự kiện tìm kiếm"""
+        self.search_keyword = self.search_var.get().strip()
+        self._load_menu(self.current_filter)
+
+    def _clear_search(self):
+        """Xóa bộ lọc tìm kiếm"""
+        self.search_var.set("")
+        self.search_keyword = ""
+        self._load_menu(self.current_filter)
+    # ----------------
 
     def run(self):
-        """Chạy ứng dụng"""
         self.window.mainloop()
